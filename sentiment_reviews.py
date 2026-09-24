@@ -1,17 +1,22 @@
 """
-Sentiment analysis στις κριτικές Inside Airbnb με πολυγλωσσικό transformer (XLM-RoBERTa).
+Ανάλυση συναισθήματος των κριτικών του Inside Airbnb
+με το πολυγλωσσικό μοντέλο XLM-RoBERTa (XLM-T).
 
-Χρήση:
-  python sentiment_reviews.py \
-      --inputs athens=data/athens_reviews.csv.gz \
-               thessaloniki=data/thessaloniki_reviews.csv.gz \
-               crete=data/crete_reviews.csv.gz \
-      --since 2023-01-01 --out results
+Το script εκτελεί τα ακόλουθα στάδια:
+1. Φόρτωση των κριτικών για κάθε περιοχή.
+2. Διατήρηση των κριτικών από την επιλεγμένη ημερομηνία και μετά.
+3. Καθαρισμό του κειμένου και αφαίρεση αυτοματοποιημένων μηνυμάτων.
+4. Ταξινόμηση των κριτικών σε θετικό, ουδέτερο και αρνητικό συναίσθημα.
+5. Υπολογισμό συνεχούς δείκτη sentiment από -1 έως +1.
+6. Αποθήκευση ενδιάμεσων και τελικών αποτελεσμάτων ανά περιοχή.
 
-- Αποθηκεύει τα αποτελέσματα σε κομμάτια (chunks): αν διακοπεί, το ξανατρέχεις
-  και συνεχίζει από εκεί που σταμάτησε.
-- Το τελικό αρχείο ανά περιοχή ΔΕΝ περιέχει το κείμενο (για μικρό μέγεθος).
-  Το ενώνεις με τις κριτικές μέσω της στήλης `id`.
+Παράδειγμα εκτέλεσης:
+    python sentiment_reviews.py \
+        --inputs athens=data/athens_reviews.csv.gz \
+                 thessaloniki=data/thessaloniki_reviews.csv.gz \
+                 crete=data/crete_reviews.csv.gz \
+        --since 2023-01-01 \
+        --out results
 """
 import argparse
 import math
@@ -44,7 +49,7 @@ def load_reviews(path, since):
 
 @torch.no_grad()
 def score(texts, tok, model, device, batch_size):
-    # Ταξινόμηση κατά μήκος για λιγότερο padding -> πολύ πιο γρήγορο
+    # Ταξινόμηση των κριτικών βάσει μήκους για τη μείωση του περιττού padding
     order = sorted(range(len(texts)), key=lambda i: len(texts[i]))
     probs = [None] * len(texts)
     use_amp = device.type == "cuda"
